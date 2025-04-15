@@ -1,0 +1,62 @@
+# sample comes from https://github.com/docker/awesome-compose
+
+services:
+  frontend:
+    image: list/excalidraw-iframe:v0.17.3-fork-b1
+#    image: alswl/excalidraw:v0.17.3-fork-b1
+    environment:
+      - VITE_APP_BACKEND_V2_GET_URL=http://10.92.1.208:8081/api/v2/scenes/
+      - VITE_APP_BACKEND_V2_POST_URL=http://10.92.1.208:8081/api/v2/scenes/
+      - VITE_APP_WS_SERVER_URL=http://10.92.1.208:8082
+      - VITE_APP_FIREBASE_CONFIG={}
+      # alswl'fork env
+      # forked excalidraw can use env https://github.com/alswl/excalidraw/pull/5
+      - VITE_APP_HTTP_STORAGE_BACKEND_URL=http://10.92.1.208:8081/api/v2
+      - VITE_APP_STORAGE_BACKEND=http
+    ports:
+      - 880:80
+    networks:
+      - excalidraw
+
+#  storage:
+#    image: alswl/excalidraw-storage-backend:v2023.11.11
+#    restart: always
+#    environment: # docs https://github.com/alswl/excalidraw-storage-backend#environement-variables
+#      - PORT=8081
+#    ports:
+#      - 8081:8081
+
+  storage:
+    image: alswl/excalidraw-storage-backend:v2023.11.11
+    restart: unless-stopped
+    environment:
+      - PORT=8081
+      - STORAGE_URI=mongodb://${DB_USER}:${DB_PASS}@mongodb:27017
+    ports:
+      - 8081:8081
+    networks:
+      - excalidraw
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:7.0.5-jammy
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${DB_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_PASS}
+    volumes:
+      - ${DB_VOLUME_PATH}:/data/db
+    user: "1000"
+    networks:
+      - excalidraw
+
+  room:
+    image: excalidraw/excalidraw-room:sha-49bf529
+    ports:
+      - 8082:80
+    networks:
+      - excalidraw
+
+
+networks:
+  excalidraw:
